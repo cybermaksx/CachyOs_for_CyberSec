@@ -21,13 +21,15 @@ No bloat. No GUI wizard. No asking you to "click next". Just `./cachy-sec-setup.
 ✔  Verifies BlackArch strap.sh by SHA1 before running it
 ✔  Writes a proper mirror list (EU / US / Asia — pick your latency)
 ✔  Full system update before anything else
-✔  Installs paru if you don't have an AUR helper yet
+✔  Installs yay if you don't have an AUR helper yet
 ✔  100+ tools across 12 categories (details below)
-✔  Python sec venv at ~/.venvs/sec — no more breaking your system pip
+✔  Python CLI tools via pipx — isolated envs, no venv activation needed
+✔  Python library venv at ~/.venvs/sec — for things you import in scripts
 ✔  sysctl kernel hardening — because default Linux trusts everyone too much
 ✔  ~/sec/ workspace with a sensible directory structure
 ✔  Fish abbreviations & functions — no shell change, just new powers
 ✔  Enables tor and docker as services
+✔  Global failure summary — know exactly what didn't install and why
 ```
 
 ---
@@ -48,13 +50,13 @@ No bloat. No GUI wizard. No asking you to "click next". Just `./cachy-sec-setup.
 ## Install
 
 ```bash
-git clone https://github.com/yourname/cachy-sec-setup
-cd cachy-sec-setup
+git clone https://github.com/cybermaksx/CachyOs_for_CyberSec
+cd CachyOs_for_CyberSec
 chmod +x cachy-sec-setup.sh
 ./cachy-sec-setup.sh --all
 ```
 
-> ⚠️ **Do NOT run as root.** The script calls sudo itself where needed.  
+> **Do NOT run as root.** The script calls sudo itself where needed.  
 > Running it as root is like giving yourself admin on a box you're testing — technically works, definitely wrong.
 
 Open a new fish session after it finishes and everything will be there.
@@ -83,8 +85,10 @@ Open a new fish session after it finishes and everything will be there.
 | `--cloud` | Cloud & container security |
 | `--osint` | OSINT tools |
 | `--utils` | Dev utilities |
-| `--python` | Python sec libraries only |
+| `--python` | Python library venv only |
+| `--pipx` | Python CLI tools via pipx only |
 | `--harden` | sysctl kernel hardening only |
+| `--workspace` | Create ~/sec directory structure only |
 | `--fish` | Fish aliases only |
 | `--help` | You're reading the wrong thing |
 
@@ -126,8 +130,37 @@ Also downloads **rockyou.txt** into `~/sec/passwords/wordlists/`
 ### 🕵️ OSINT
 `spiderfoot` `recon-ng` `sherlock` `maltego` `photon`
 
-### 🐍 Python (in `~/.venvs/sec`)
-`impacket` `pwntools` `scapy` `frida-tools` `volatility3` `yara-python` `shodan` `censys` `ldap3` `paramiko` `cryptography` and more
+---
+
+## Python tools
+
+### 🐍 Via pipx (CLI tools — globally available, zero activation needed)
+
+> Each tool gets its own isolated environment. Like solitary confinement, but for Python.  
+> `pipx upgrade-all` keeps your inmate list current.
+
+| Tool | What it does |
+|------|-------------|
+| `impacket` | SMB/AD attack scripts: `secretsdump`, `GetUserSPNs`, `smbclient`… |
+| `pwntools` | CTF exploit framework + `pwn` CLI |
+| `frida-tools` | Dynamic instrumentation — hook anything at runtime |
+| `shodan` | Query Shodan from your terminal |
+| `censys` | Query Censys internet-wide scan data |
+| `netexec` | Network attack Swiss-army knife (CrackMapExec's successor) |
+
+```fish
+pipx list           # see your tools
+pipx upgrade-all    # upgrade everything
+```
+
+### 📚 Via venv (importable libraries — `~/.venvs/sec`)
+
+`requests` `httpx` `scapy` `paramiko` `cryptography` `pyOpenSSL` `dnspython` `ldap3` `netifaces` `yara-python`
+
+```fish
+secenv      # activate the venv in fish
+deactivate  # exit when done
+```
 
 ---
 
@@ -143,6 +176,7 @@ ctf          → cd ~/sec/ctf
 
 # Network
 myip         → curl -s ifconfig.me
+localip      → ip -br a
 listening    → ss -tlnp
 sniff        → sudo tcpdump -i any -nn -v
 
@@ -153,7 +187,7 @@ nmap-vuln    → nmap --script=vuln -T4
 nmap-stealth → sudo nmap -sS -T2 -p-
 nmap-udp     → sudo nmap -sU -T4 --top-ports 200
 
-# Quick hacks
+# Encoding / decoding
 b64d / b64e       base64 decode / encode
 urld / urle       URL decode / encode
 hex2text / text2hex
@@ -161,11 +195,17 @@ extract-ips       grep IPv4 from stdin
 extract-urls      grep URLs from stdin
 extract-emails    grep emails from stdin
 
-# Misc
+# Tools
 msfgo        → msfconsole -q
-secenv       → activate Python sec venv
+secenv       → activate Python library venv
 gdb          → gdb -q
 pchain       → proxychains4 -q
+tor-check    → check if you're routing through Tor
+
+# Updates
+update       → sudo pacman -Syyu
+aur-update   → yay -Syyu
+pipx-upgrade → pipx upgrade-all
 ```
 
 > Fish abbreviations expand when you press Space or Enter — you see exactly what runs. No magic black-box aliases.
@@ -227,11 +267,18 @@ Log martian packets           log_martians = 1
 | mirrors.tuna.tsinghua.edu.cn | Asia |
 | blackarch.unixpeople.org | Europe |
 
-The strap.sh is verified by SHA1 before execution. If the checksum doesn't match, the script exits and touches nothing.
+The strap.sh is verified by SHA1 before execution. If the checksum doesn't match, the script exits and touches nothing.  
+If BlackArch releases an updated strap.sh and the hash changes, the script will print the expected vs actual hash and a link to the official downloads page.
 
 ---
 
 ## FAQ
+
+**Q: Why yay instead of paru?**  
+A: paru was archived and is no longer maintained. yay is the community's actively maintained AUR helper. Same vibes, same flags, still Rust under the hood.
+
+**Q: Why pipx for Python tools?**  
+A: A shared venv means one broken dependency breaks everything. With pipx, each tool gets its own isolated environment. `impacket`'s deps can't fight with `frida`'s deps because they never meet. Run `pipx upgrade-all` and move on with your life.
 
 **Q: Does this change my shell to zsh or bash?**  
 A: No. Your fish stays. The script is a bash script (because that's what you run installers in) but your interactive shell is untouched.
@@ -240,13 +287,16 @@ A: No. Your fish stays. The script is a bash script (because that's what you run
 A: No, and the script will yell at you if you try.
 
 **Q: Some packages failed to install. Is that a problem?**  
-A: Not necessarily. Some BlackArch tools have weird deps or are AUR-only. The script warns and continues — failed packages are listed at the end of each category.
+A: Not necessarily. Some BlackArch tools have unusual deps or are AUR-only. The script warns and continues — permanently failed packages are listed together at the end so you have a clean punch list.
 
-**Q: Where are my Python tools?**  
+**Q: Where are my Python CLI tools?**  
+A: In `~/.local/bin`, available globally. No activation needed. Run `pipx list` to see them all.
+
+**Q: Where are my Python libraries?**  
 A: In `~/.venvs/sec`. Type `secenv` in fish to activate. Type `deactivate` when done.
 
 **Q: Is this legal?**  
-A: Installing security tools is legal everywhere that I know of. *Using* them on systems you don't own is a different story. Don't be that person.
+A: Installing security tools is legal everywhere I know of. *Using* them on systems you don't own is a different story. Don't be that person.
 
 ---
 
